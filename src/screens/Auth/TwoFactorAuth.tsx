@@ -13,7 +13,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { verify2faAPI } from '../../services/nurseService';
-
 type RootStackParamList = {
   Login: undefined;
   Dashboard: undefined;
@@ -36,7 +35,7 @@ const TwoFactorAuth = () => {
         await AsyncStorage.setItem('orgId', response.orgId);
 
         setError('');
-        navigation.navigate('Dashboard');
+        navigation.replace('Dashboard');
       } 
      catch (err) {
       console.error('OTP Verification Failed:', err);

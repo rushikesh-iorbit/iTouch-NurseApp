@@ -16,6 +16,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '../../components/Header';
 import { GlobalNotification } from '../../components/GlobalNotification';
+import { handleApiError } from '../../utils/errorHandler';
+
 
 const Menu = require('../../../assets/icons/menu-line.png');
 const NotificationIcon = require('../../../assets/icons/notification-2-line.png');
@@ -64,13 +66,9 @@ const HomeScreen = () => {
             text2: errorMsg || 'SVG data not found.',
           });
         }
-      } catch (err: any) {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Failed to fetch SVG',
-        });
-      } finally {
+      } catch (error: any) {
+          handleApiError(error, 'Failed to fetch SVG');
+        } finally {
         setLoading(false);
       }
     };

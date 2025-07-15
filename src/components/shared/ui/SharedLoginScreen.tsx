@@ -1,3 +1,4 @@
+// shared/ui/LoginScreen.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -8,78 +9,141 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Changed to FontAwesome for eye-slash icon
-const eyeIcon = require('../../../assets/icons/eye-line.png');
-const eyeOffIcon = require('../../../assets/icons/eye-off-line.png');
-
-
-
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Toast from 'react-native-toast-message';
+
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginNurse } from '../../services/nurseService'; 
+
+const eyeIcon = require('../../../../assets/icons/eye-line.png');
+const eyeOffIcon = require('../../../../assets/icons/eye-off-line.png');
 
 type RootStackParamList = {
   Login: undefined;
-  TwoFactorAuth: undefined; 
+  TwoFactorAuth: undefined;
   Dashboard: undefined;
 };
 
-const LoginScreen = () => {
+type LoginScreenProps = {
+  title: string;
+  description: string;
+  imageSource: any;
+  logoSource: any;
+  onLogin: (username: string, password: string) => Promise<any>;
+};
+
+const SharedLoginScreen: React.FC<LoginScreenProps> = ({
+  title,
+  description,
+  imageSource,
+  logoSource,
+  onLogin,
+}) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisibility, setPasswordVisibility] = useState(true);
-  const [rightIconColor, setRightIconColor] = useState('#000000');
+  const [rightIconColor] = useState('#000000');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false)
 
-  
 
   const handlePasswordVisibility = () => {
-  setPasswordVisibility(prev => !prev);
-};
-
-
-  const handleLogin = async () => {
-    try {
-      const loginData = {
-        userName: username,
-        password: password,
-      };
-
-      const response = await loginNurse(loginData);
-      await AsyncStorage.setItem('userName', response.userName);
-      await AsyncStorage.setItem('orgName', response.orgName);
-
-      setError('');
-      navigation.replace('TwoFactorAuth');
-    } catch (err) {
-      console.error('Login failed:', err);
-      setError('Invalid credentials. Please try again.');
-    }
+    setPasswordVisibility(prev => !prev);
   };
+
+   const validateEmail = (email: any) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+    };
+
+  
+  const handleLogin = async () => {
+  Keyboard.dismiss();
+  
+  if (!username || !password) {
+    Toast.show({
+      type: 'error',
+      text1: 'Login Error',
+      text2: 'Please fill Username & Password',
+    });
+    return;
+  }
+
+  if (!validateEmail(username)) {
+    Toast.show({
+      type: 'error',
+      text1: 'Invalid Input',
+      text2: 'Please enter a valid email address',
+    });
+    return;
+  }
+
+  try {
+    setLoading(true);
+    console.log('Login attempt with:', username);
+    
+    const response = await onLogin(username, password);
+    console.log('Login response:', response);
+
+    await AsyncStorage.setItem('userName', response.userName);
+    await AsyncStorage.setItem('orgName', response.orgName);
+
+    if (response.code === '111') {
+      Toast.show({
+        type: 'info',
+        text1: 'Verify Your Email',
+        text2: response.message,
+      });
+      // Set state for email verification flow if needed
+      return;
+    }
+
+    if (response.code === '222') {
+      Toast.show({
+        type: 'info',
+        text1: '2-Factor Authentication',
+        text2: response.message,
+      });
+      navigation.replace('TwoFactorAuth');
+      return;
+    }
+
+    // If no special codes, proceed to dashboard
+    navigation.replace('Dashboard');
+
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.message 
+      || 'Invalid credentials. Please check your email and password';
+    
+    Toast.show({
+      type: 'error',
+      text1: 'Login Failed',
+      text2: errorMessage,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <SafeAreaView style={styles.safeContainer}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-
         <View style={styles.leftPanel}>
-          <Text style={styles.appTitle}>iTouch Nurse</Text>
-          <Image source={require('../../../assets/images/nurse.png')} style={styles.image} resizeMode="contain" />
-          <Text style={styles.description}>
-            This app is built to streamline ICU tasks for nurses. View real time
-            patient vitals, receive instructions from doctors and manage shift
-            handovers smoothly. Easily access patient details, get critical alerts
-            and stay connected for faster, safer care delivery.
-          </Text>
+          <Text style={styles.appTitle}>{title}</Text>
+          <Image source={imageSource} style={styles.image} resizeMode="contain" />
+          <Text style={styles.description}>{description}</Text>
         </View>
 
         <View style={styles.rightPanel}>
-          <Image source={require('../../../assets/images/hospital_logo.jpg')} style={styles.logo} />
+          <Image source={logoSource} style={styles.logo} />
           <Text style={styles.welcomeText}>Welcome to ICU Ward B</Text>
 
           <TextInput
@@ -91,7 +155,7 @@ const LoginScreen = () => {
             autoCapitalize="none"
           />
 
-           <View style={styles.passwordContainer}>
+          <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
               placeholder="Password"
@@ -101,10 +165,7 @@ const LoginScreen = () => {
               secureTextEntry={passwordVisibility}
               autoCapitalize="none"
             />
-            <TouchableOpacity 
-              style={styles.eyeIcon}
-              onPress={handlePasswordVisibility}
-            >
+            <TouchableOpacity style={styles.eyeIcon} onPress={handlePasswordVisibility}>
               <Image
                 source={passwordVisibility ? eyeOffIcon : eyeIcon}
                 style={[styles.eyeImage, { tintColor: rightIconColor }]}
@@ -131,7 +192,8 @@ const LoginScreen = () => {
   );
 };
 
-export default LoginScreen;
+export default SharedLoginScreen;
+
 
 const styles = StyleSheet.create({
   safeContainer: {

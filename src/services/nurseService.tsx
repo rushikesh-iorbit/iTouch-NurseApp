@@ -70,13 +70,51 @@
       console.log('Here::', pureToken);
       // console.log('authCookie:', authCookie);
       // await AsyncStorage.setItem('authCookie', JSON.stringify(authCookie));
-      console.log('loginAPI response: ', response.data);
+      //console.log('loginAPI response: ', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Login API error: ', error?.response || error);
-      throw error;
+  
+       if (error.response) {
+      // The request was made and the server responded with a status code
+      throw {
+        response: {
+          data: {
+            message: error.response.data?.message || 'Invalid credentials'
+          }
+        }
+      };
+    } else {
+      // Something happened in setting up the request
+      throw {
+        response: {
+          data: {
+            message: 'Network error. Please try again.'
+          }
+        }
+      };
+    }
+      
     }
   };
+
+  export const logoutAPI = async () => {
+  try {
+    const {authCookie, orgName, userName} = await getCommonData();
+    const response = await itouchServer.get(
+      `${orgName}/user/${userName}/logout`,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('logoutAPI response: ', response);
+    return response.data;
+  } catch (error: any) {
+    console.error('logout API error: ', error.response.data?.message || error);
+    throw error;
+  }
+};
 
   export const getNurseDetails= async ()=>{
     try{
@@ -89,10 +127,10 @@
           },
         },
       );
-      console.log('get NurseDetail API response: ', response.data);
+      //console.log('get NurseDetail API response: ', response.data);
       return response.data;
     }catch(error:any){
-      console.error('getWardSVG API error: ', error?.response || error);
+      //console.error('getWardSVG API error: ', error?.response || error);
       throw error;
     }
 
@@ -122,12 +160,13 @@
     AsyncStorage.setItem('wardCode', response.data.wardCode);
     return response.data;
   } catch (error: any) {
-    //console.error('getWardSVG API error: ', error?.response || error); 
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: 'Failed to load Ward SVG. You may not have an active shift assigned.', 
-    });
+    // //console.error('getWardSVG API error: ', error?.response || error); 
+    // Toast.show({
+    //   type: 'error',
+    //   text1: 'Error',  
+    //   text2: 'Failed to load Ward SVG. You may not have an active shift assigned.', 
+    // });
+    //console.log('getWardSVG API error: ', error?.response || error);
     throw error;
   }
 }
@@ -148,7 +187,7 @@ export const getBedPatientInfo = async (bedCode: string) => {
     console.log('get BedPatientInfo API response: ', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('getBedPatientInfo API error: ', error?.response || error);
+   // console.error('getBedPatientInfo API error: ', error?.response || error);
     throw error;
   }
 }

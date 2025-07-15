@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef }  from 'react';
 import { View } from 'react-native';
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 // import SvgWardSvg4 from './src/svg/WardSvg4';
@@ -11,13 +11,26 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
 import Toast from 'react-native-toast-message';
+import { setupAxiosInterceptors, setNavigatorRef } from './src/utils/axiosInterceptor';
+
 
 enableScreens();
 
-export default function App() {
+export default function App(){
+  const navigationRef = useRef(null);
+
+  useEffect(() => {
+    setupAxiosInterceptors(); // Can be setup once
+  }, []);
+
   return (
    <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => {
+          setNavigatorRef(navigationRef.current); 
+        }}
+      >
         <AppNavigator />
       </NavigationContainer>
       <Toast/>

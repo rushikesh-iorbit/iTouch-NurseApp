@@ -11,15 +11,54 @@ import {
 
 const Menu = require('../../assets/icons/menu-line.png');
 const NotificationIcon = require('../../assets/icons/notification-2-line.png');
+import { logoutAPI } from '../services/nurseService';
+import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+type RootStackParamList = {
+  NurseLogin: undefined;
+  TwoFactorAuth: undefined;
+  Dashboard: undefined;
+};
 export const Header = () => {
   const [popupVisible, setPopupVisible] = useState(false);
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  
+  const handleLogout = async () => {
+  try {
+    await logoutAPI();
+    await AsyncStorage.multiRemove([
+      'authCookie', 'userName', 'orgName', 'hospitalCode', 'wardCode'
+    ]);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'NurseLogin' }],
+    });
+    Toast.show({
+      type: 'success',
+      text1: 'Logged out',
+      text2: 'Session ended successfully.',
+    });
+  } catch (err) {
+    Toast.show({
+      type: 'error',
+      text1: 'Logout Failed',
+      text2: 'Please try again.',
+    });
+  }
+};
 
-  const handleLogout = () => {
-    setPopupVisible(false);
-    console.log('Logging out...');
-    // TODO: Add your logout logic here
-  };
+const getFormattedDate = () => {
+  const date = new Date();
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }); 
+};
+
 
   return (
     <>
@@ -32,7 +71,7 @@ export const Header = () => {
         </View>
 
         <View style={styles.headerRight}>
-          <Text style={styles.date}>03 July 2025 </Text>
+          <Text style={styles.date}>{getFormattedDate()} </Text>
           <Image source={NotificationIcon} style={styles.notificationIcon} />
         </View>
       </View>
