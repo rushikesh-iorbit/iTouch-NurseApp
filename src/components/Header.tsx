@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,34 @@ type RootStackParamList = {
 };
 export const Header = () => {
   const [popupVisible, setPopupVisible] = useState(false);
+    const [currentTime, setCurrentTime] = useState('');
+
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+    useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      setCurrentTime(time);
+    };
+
+    updateTime(); // Set initial time
+
+    const now = new Date();
+    const delay = (60 - now.getSeconds()) * 1000;
+
+    const timeout = setTimeout(() => {
+      updateTime();
+      const interval = setInterval(updateTime, 60000);
+      return () => clearInterval(interval);
+    }, delay);
+
+    return () => clearTimeout(timeout);
+  }, []);
   
   const handleLogout = async () => {
   try {
@@ -70,9 +97,13 @@ const getFormattedDate = () => {
           <Text style={styles.title}>iTouch Nurse</Text>
         </View>
 
-        <View style={styles.headerRight}>
+        {/* <View style={styles.headerRight}>
           <Text style={styles.date}>{getFormattedDate()} </Text>
           <Image source={NotificationIcon} style={styles.notificationIcon} />
+        </View> */}
+        <View style={styles.headerRight}>
+          <Text style={styles.date}>{getFormattedDate()} </Text>
+          <Text style={styles.time}>{currentTime}</Text>
         </View>
       </View>
 
@@ -133,6 +164,12 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 16,
     color: '#666',
+    marginRight: 10
+  },
+  time: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '500',
   },
   overlay: {
     flex: 1,

@@ -13,7 +13,7 @@ type BedPatientInfoCardRouteParams = {
   patientCode?: string;
   firstName?: string;
   lastName?: string;
-  age?: number | string;
+  age?: number;
   birthDate?: string;
   bedStatus?: string;
   orgName?: string;

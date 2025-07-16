@@ -17,6 +17,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '../../components/Header';
 import { GlobalNotification } from '../../components/GlobalNotification';
 import { handleApiError } from '../../utils/errorHandler';
+import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
+import CalloutModal from '../../components/CallOutModal/CalloutModal'; // ✅ Import the modal
 
 
 const Menu = require('../../../assets/icons/menu-line.png');
@@ -32,6 +34,9 @@ const HomeScreen = () => {
   const [svgXml, setSvgXml] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [showCallout, setShowCallout] = useState(false); // ✅ modal toggle
+  const [bedPatientInfo, setBedPatientInfo] = useState<any>(null); // ✅ info to pass into modal
+
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const fetchBedPatientInfo = async (bedCode: string) => {
@@ -39,7 +44,9 @@ const HomeScreen = () => {
       const bedPatientResponse = await getBedPatientInfo(bedCode);
       if (bedPatientResponse && bedPatientResponse.bedCode) {
         setSelectedElement(bedPatientResponse.bedCode);
-        navigation.navigate('BedPatientInfo', bedPatientResponse);
+        //navigation.navigate('BedPatientInfo', bedPatientResponse);
+        setBedPatientInfo(bedPatientResponse); // ✅ store data
+        setShowCallout(true); // ✅ show modal
       }
     } catch (error: any) {
       console.error('getBedPatientInfo API error: ', error?.response || error);
@@ -88,6 +95,12 @@ const HomeScreen = () => {
       
         {/* Right Panel - SVG */}
         <View style={styles.rightPanel}>
+          <ReactNativeZoomableView
+            zoomEnabled={true}
+            maxZoom={3}
+            minZoom={0.5}
+            initialZoom={1}
+            bindToBorders={true}>
           {loading ? (
             <ActivityIndicator size="large" color="#0000ff" />
           ) : svgXml ? (
@@ -101,8 +114,14 @@ const HomeScreen = () => {
           ) : (
             <Text>No Shift Found</Text>
           )}
+          </ReactNativeZoomableView>
         </View>
       </View>
+       <CalloutModal
+        visible={showCallout}
+        onClose={() => setShowCallout(false)}
+        bedPatientInfo={bedPatientInfo}
+      />
     </View>
   );
 };
@@ -119,10 +138,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   leftPanel:{
-    width: '40%',
+    width: 'auto',
   },
    rightPanel: {
-    width: '60%',
+    width: 'auto',
     flex: 1,
     padding: 10,
     justifyContent: 'center',
