@@ -18,7 +18,7 @@ import { Header } from '../../components/Header';
 import { GlobalNotification } from '../../components/GlobalNotification';
 import { handleApiError } from '../../utils/errorHandler';
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
-import CalloutModal from '../../components/CallOutModal/CalloutModal'; // ✅ Import the modal
+import CalloutModal from '../../components/CallOutModal/CalloutModal';
 
 
 const Menu = require('../../../assets/icons/menu-line.png');
@@ -34,8 +34,8 @@ const HomeScreen = () => {
   const [svgXml, setSvgXml] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [showCallout, setShowCallout] = useState(false); // ✅ modal toggle
-  const [bedPatientInfo, setBedPatientInfo] = useState<any>(null); // ✅ info to pass into modal
+  const [showCallout, setShowCallout] = useState(false); 
+  const [bedPatientInfo, setBedPatientInfo] = useState<any>(null);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -45,8 +45,8 @@ const HomeScreen = () => {
       if (bedPatientResponse && bedPatientResponse.bedCode) {
         setSelectedElement(bedPatientResponse.bedCode);
         //navigation.navigate('BedPatientInfo', bedPatientResponse);
-        setBedPatientInfo(bedPatientResponse); // ✅ store data
-        setShowCallout(true); // ✅ show modal
+        setBedPatientInfo(bedPatientResponse); 
+        setShowCallout(true); 
       }
     } catch (error: any) {
       console.error('getBedPatientInfo API error: ', error?.response || error);
@@ -106,8 +106,8 @@ const HomeScreen = () => {
           ) : svgXml ? (
             <DynamicSvg
               svgXml={svgXml}
-              width={490}
-              height={490}
+              width={Dimensions.get('window').width}
+              height={Dimensions.get('window').height-50}
               initialColor={currentColor}
               onElementSelected={fetchBedPatientInfo}
             />
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
    rightPanel: {
     width: 'auto',
     flex: 1,
-    padding: 10,
+    // padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },

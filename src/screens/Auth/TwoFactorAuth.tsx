@@ -13,6 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { verify2faAPI } from '../../services/nurseService';
+import Toast from 'react-native-toast-message';
+
 type RootStackParamList = {
   Login: undefined;
   Dashboard: undefined;
@@ -24,7 +26,17 @@ const TwoFactorAuth = () => {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
 
+   
   const handleVerifyOtp = async () => {
+    if (!otp.trim()) {
+    Toast.show({
+      type: 'error',
+      text1: 'OTP Required',
+      text2: 'Please enter the OTP to continue.',
+    });
+    return;
+  }
+
     try {
       const response = await verify2faAPI(otp);
       console.log('OTP Verification Response:', response);
@@ -102,7 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#0077b6',
+    color: '#34a853',
   },
   description: {
     fontSize: 14,
@@ -135,7 +147,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   loginButton: {
-    backgroundColor: '#0077b6',
+    backgroundColor: '#34a853',
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',

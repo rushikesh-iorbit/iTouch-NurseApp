@@ -2,7 +2,7 @@
   import axios from 'axios';
   import Toast from 'react-native-toast-message';
 
-  const BASE_URL = 'http://192.168.1.115:8055/api';
+  const BASE_URL = 'http://192.168.1.128:8055/api';
 
   export const itouchServer = axios.create({
     baseURL: BASE_URL,

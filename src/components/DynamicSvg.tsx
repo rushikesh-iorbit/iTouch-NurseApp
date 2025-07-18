@@ -1,6 +1,6 @@
 // src/components/DynamicSvg.tsx
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Path, Text, Circle, Rect, G, Line } from 'react-native-svg';
 import { DOMParser } from 'xmldom';
 
@@ -22,8 +22,8 @@ interface DynamicSvgProps {
 
 const DynamicSvg: React.FC<DynamicSvgProps> = ({
   svgXml,
-  width = 300,
-  height = 200,
+  width = Dimensions.get('window').width,
+  height = Dimensions.get('window').height,
   initialColor = '#ff00ff',
   onElementSelected,
 }) => {
