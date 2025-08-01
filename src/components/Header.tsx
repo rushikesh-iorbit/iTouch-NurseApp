@@ -9,13 +9,17 @@ import {
   Pressable,
 } from 'react-native';
 
-const Menu = require('../../assets/icons/menu-line.png');
-const NotificationIcon = require('../../assets/icons/notification-2-line.png');
 import { logoutAPI } from '../services/nurseService';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TextInput } from 'react-native';
+
+const Menu = require('../../assets/icons/Menu_Button.png');
+const SearchIcon = require('../../assets/icons/search_icon.png');
+const FilterIcon = require('../../assets/icons/search_settings.png');
+
 
 type RootStackParamList = {
   NurseLogin: undefined;
@@ -24,7 +28,8 @@ type RootStackParamList = {
 };
 export const Header = () => {
   const [popupVisible, setPopupVisible] = useState(false);
-    const [currentTime, setCurrentTime] = useState('');
+  const [currentTime, setCurrentTime] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -101,12 +106,37 @@ const getFormattedDate = () => {
           <Text style={styles.date}>{getFormattedDate()} </Text>
           <Image source={NotificationIcon} style={styles.notificationIcon} />
         </View> */}
+
+          
+         <View style={styles.searchContainer}>
+          <Image
+            source={SearchIcon}
+            //style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search here"
+            placeholderTextColor="#888"
+            underlineColorAndroid="transparent"
+            autoFocus={false}
+          />
+          <TouchableOpacity onPress={() => console.log('Filter clicked')}>
+            <Image
+              source={FilterIcon}
+              style={styles.filterIcon}
+            />
+          </TouchableOpacity>
+        </View>
+        
         <View style={styles.headerRight}>
           <Text style={styles.date}>{getFormattedDate()} </Text>
           <Text style={styles.time}>{currentTime}</Text>
         </View>
       </View>
-
+        
+        
+    {/* Middle search bar */}
+       
       {/* Popup Modal */}
       <Modal
         transparent
@@ -134,9 +164,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    backgroundColor: '#fff',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
+    backgroundColor: '#f8f9f9',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -163,8 +193,9 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 16,
-    color: '#666',
-    marginRight: 10
+    marginRight: 10,
+    fontWeight: '500',
+
   },
   time: {
     fontSize: 16,
@@ -193,5 +224,40 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     fontWeight: '600',
     fontSize: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 8,
+    marginHorizontal: 10,
+    flex: 1,
+    maxWidth: 300,
+    height: 40,
+    overflow: 'hidden',
+  },
+  searchIcon: {
+    width: 24,
+    height: 18,
+    tintColor: '#888',
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#fff',
+    paddingVertical: 0,
+    backgroundColor: '#fffefe',
+    height: 18,
+  },
+  filterIcon: {
+    width: 24,
+    height: 18,
+    // marginLeft: 20,
+    objectFit: 'contain',
+    backgroundColor: 'transparent',
   },
 });

@@ -12,8 +12,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { verify2faAPI } from '../../services/nurseService';
+import { verify2faAPI, getAndCreateFcmTokenAPI } from '../../services/nurseService';
 import Toast from 'react-native-toast-message';
+import  messaging from '@react-native-firebase/messaging';
+import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 type RootStackParamList = {
   Login: undefined;
@@ -45,6 +47,20 @@ const TwoFactorAuth = () => {
         await AsyncStorage.setItem('userId', response.userId);
         await AsyncStorage.setItem('hospitalId', response.hospitalId);
         await AsyncStorage.setItem('orgId', response.orgId);
+        await AsyncStorage.setItem('firstName', response.firstName);
+        await AsyncStorage.setItem('lastName', response.lastName);
+        
+        const fcmToken= await messaging().getToken();
+        const deviceOsInfo = Platform.OS;
+        const userName = await AsyncStorage.getItem('userName');
+
+        const fcmPayload = {
+          username: userName,
+          fcmToken,
+          deviceOsInfo
+        };
+
+        await getAndCreateFcmTokenAPI(fcmPayload);
 
         setError('');
         navigation.replace('Dashboard');

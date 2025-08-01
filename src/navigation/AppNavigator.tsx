@@ -4,7 +4,7 @@ import LoginScreen from '../screens/Auth/LoginScreen';
 import Dashboard from '../screens/Dashboard/Dashboard';
 import TwoFactorAuth from '../screens/Auth/TwoFactorAuth';
 import BedPatientInfoCard from '../screens/BedPatientInfo/BedPatientInfoCard';
-import NurseLogin from '../screens/NurseLogin/NurseLogin';
+import NurseLogin from '../screens/Auth/NurseLogin';
 
 const Stack = createNativeStackNavigator();
 

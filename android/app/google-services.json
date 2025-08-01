@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1082069248321",
+    "project_id": "itouch-iorbit-tech",
+    "storage_bucket": "itouch-iorbit-tech.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082069248321:android:a99d4c29df4718fd31d9c0",
+        "android_client_info": {
+          "package_name": "com.itouch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmQOxrOFqRVQUucRx_f9tX7F1krbTmDHs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082069248321:android:7faab7e999ed446f31d9c0",
+        "android_client_info": {
+          "package_name": "com.nurseapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmQOxrOFqRVQUucRx_f9tX7F1krbTmDHs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

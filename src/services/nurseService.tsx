@@ -16,8 +16,11 @@
     const orgName = await AsyncStorage.getItem('orgName');
     const userName = await AsyncStorage.getItem('userName');
     const hospitalCode = await AsyncStorage.getItem('hospitalCode');
-    
-    return {authCookie, orgName, userName, hospitalCode };
+    const nurseCode = await AsyncStorage.getItem('nurseCode');
+    const wardCode = await AsyncStorage.getItem('wardCode');
+    const shiftCode = await AsyncStorage.getItem('shiftCode');
+
+    return {authCookie, orgName, userName, hospitalCode, nurseCode, wardCode, shiftCode};
   };
 
   export const verify2faAPI = async (otp: string) => {
@@ -116,8 +119,72 @@
   }
 };
 
+
+
+
+export const getAndCreateFcmTokenAPI = async (data: any) => {
+  try {
+    const {authCookie, orgName, userName} = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    if (!userName) {
+      throw new Error('User name not found in AsyncStorage');
+    }
+    console.log('userName:', userName);
+    console.log('hospitalCode:', hospitalCode);
+    console.log('data:', data);
+    const response = await itouchServer.post(
+      `${orgName}/nurse/${hospitalCode}/${userName}/createfcmtoken`,
+      data,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('The fcmtoken data ', data);
+    console.log('The fcmtokenAPI response is ', response);
+    console.log('update fcmtoken API response: ', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('update fcmtoken API error: ', error?.response || error);
+    throw error;
+  }
+};
+ 
+
+export const createNurseNoteAPI = async (noteText: any) => {
+   try {
+     const { authCookie, orgName, userName } = await getCommonData();
+     const hospitalCode = await AsyncStorage.getItem('hospitalCode'); // <-- Add this line
+
+     const notePayload = {
+       objectId: noteText.objectId,
+       objectType: noteText.objectType,
+       noteType: noteText.noteType,
+       note: noteText.note,
+     };
+
+     const response = await itouchServer.post(
+       `${orgName}/nurse/${hospitalCode}/${userName}/createnote`,
+       notePayload,
+       {
+         headers: {
+           Cookie: `X-Auth=${authCookie}`,
+         },
+       }
+     );
+     console.log(response.data);
+     return response.data;
+   } catch (error: any) {
+     console.error('createDoctorNoteAPI error:', error?.response || error);
+     throw error;
+   }
+ };
+
+ 
+
   export const getNurseDetails= async ()=>{
-    try{
+    try{ 
       const {authCookie, orgName, userName} = await getCommonData();
       const hospitalCode = await AsyncStorage.getItem('hospitalCode');
       const response= await itouchServer.get(`${orgName}/nurse/${hospitalCode}/nursedetail/${userName}`,
@@ -128,6 +195,7 @@
         },
       );
       //console.log('get NurseDetail API response: ', response.data);
+      AsyncStorage.setItem('nurseCode', response.data.nurseCode);
       return response.data;
     }catch(error:any){
       //console.error('getWardSVG API error: ', error?.response || error);
@@ -173,9 +241,8 @@
 
 export const getBedPatientInfo = async (bedCode: string) => {
   try {
-    const { authCookie, orgName, userName } = await getCommonData();
+    const { authCookie, orgName, userName, wardCode } = await getCommonData();
     const hospitalCode = await AsyncStorage.getItem('hospitalCode');
-    const wardCode = await AsyncStorage.getItem('wardCode');
     const response = await itouchServer.get(
       `${orgName}/nurse/${hospitalCode}/bedpatientinfo/${wardCode}/${bedCode}`,
       {
@@ -188,6 +255,71 @@ export const getBedPatientInfo = async (bedCode: string) => {
     return response.data;
   } catch (error: any) {
    // console.error('getBedPatientInfo API error: ', error?.response || error);
+    throw error;
+  }
+}
+
+export const getCurrentShift = async () =>{
+  try{
+    const {authCookie, orgName, userName, wardCode} = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const currentDateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    
+    const response = await itouchServer.get(
+      `${orgName}/nurse/${hospitalCode}/getcurrentshift/${wardCode}/${currentDateTime}`,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('getCurrentShift API response: ', response.data);
+    AsyncStorage.setItem('shiftCode', response.data.shiftCode);
+    return response.data;
+  }catch(error:any){
+    console.error('getCurrentShift API error: ', error?.response || error);
+    throw error;
+  }
+}
+
+export const getAssignedBeds = async () => {
+  try{
+    const { authCookie, orgName, nurseCode, wardCode, shiftCode } = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    const response = await itouchServer.get(
+      `${orgName}/nurse/${hospitalCode}/assignedbedpatients/${nurseCode}/${shiftCode}/${wardCode}`,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('getAssignedBeds API response: ', response.data);
+    return response.data;
+  }catch(error:any){
+    console.error('getAssignedBeds API error: ', error?.response || error);
+    throw error;
+  }
+}
+
+export const getCurrentShiftNurses = async () => {
+  try{
+    const { authCookie, orgName, wardCode, shiftCode } = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    const response = await itouchServer.get(
+      `${orgName}/nurse/${hospitalCode}/getcurrentshiftnurses/${shiftCode}/${wardCode}`,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('getCurrentShiftNurses API response: ', response.data);
+    return response.data;
+  }catch(error:any){
+    console.error('getCurrentShiftNurses API error: ', error?.response || error);
     throw error;
   }
 }

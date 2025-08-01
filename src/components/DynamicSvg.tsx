@@ -24,7 +24,7 @@ const DynamicSvg: React.FC<DynamicSvgProps> = ({
   svgXml,
   width = Dimensions.get('window').width,
   height = Dimensions.get('window').height,
-  initialColor = '#ff00ff',
+  initialColor = '#4CAE51',
   onElementSelected,
 }) => {
   const [svgElements, setSvgElements] = useState<SvgElement[]>([]);
@@ -70,7 +70,7 @@ const DynamicSvg: React.FC<DynamicSvgProps> = ({
                 };
                 
                 props.fill = colorMap[id] || props.fill;
-                props.stroke = selectedId === id ? '#ff0000' : props.stroke || '#000';
+                props.stroke = selectedId === id ? '#4CAE51' : props.stroke || '#000';
                 props.strokeWidth = selectedId === id ? 3 : props.strokeWidth || 1;
             }
 
