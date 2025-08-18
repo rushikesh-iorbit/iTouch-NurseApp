@@ -2,7 +2,7 @@
   import axios from 'axios';
   import Toast from 'react-native-toast-message';
 
-  const BASE_URL = 'http://192.168.1.128:8055/api';
+  const BASE_URL = 'http://192.168.1.115:8055/api';
 
   export const itouchServer = axios.create({
     baseURL: BASE_URL,
@@ -196,6 +196,7 @@ export const createNurseNoteAPI = async (noteText: any) => {
       );
       //console.log('get NurseDetail API response: ', response.data);
       AsyncStorage.setItem('nurseCode', response.data.nurseCode);
+      AsyncStorage.setItem('nurseId', response.data.nurseId);
       return response.data;
     }catch(error:any){
       //console.error('getWardSVG API error: ', error?.response || error);
@@ -288,8 +289,15 @@ export const getAssignedBeds = async () => {
   try{
     const { authCookie, orgName, nurseCode, wardCode, shiftCode } = await getCommonData();
     const hospitalCode = await AsyncStorage.getItem('hospitalCode');
-    const response = await itouchServer.get(
-      `${orgName}/nurse/${hospitalCode}/assignedbedpatients/${nurseCode}/${shiftCode}/${wardCode}`,
+
+    const dataPayload={
+      nurseCode: nurseCode,
+      wardCode: wardCode,
+      shiftCode: shiftCode
+    }
+    const response = await itouchServer.post(
+      `${orgName}/nurse/${hospitalCode}/assignedbedpatients`,
+      dataPayload,
       {
         headers: {
           Cookie: `X-Auth=${authCookie}`,
@@ -324,6 +332,117 @@ export const getCurrentShiftNurses = async () => {
   }
 }
   
+export const delegatePatient = async (data:any) =>{
+  const dataPayload={
+    shiftCode: data.shiftCode,
+    wardCode: data.wardCode,
+    patientCode: data.patientCode,
+    currentNurseCode: data.currentNurseCode,
+    newNurseCode: data.newNurseCode
+  }
+  try{
+    const { authCookie, orgName, wardCode, shiftCode} = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    console.log('delegatePatient API data: ', dataPayload);
+    const response = await itouchServer.post(
+      `${orgName}/nurse/${hospitalCode}/delegatePatient`,
+      dataPayload,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('delegatePatient API response: ', response.data);
+    return response.data;
+  }catch(error:any){
+    console.error('delegatePatient API error: ', error?.response || error);
+    throw error;
+  }
+}
+
+export const getRaisedAlarm= async()=>{
+  const nurseIdString = await AsyncStorage.getItem('nurseId');
+  const nurseId: string[] = nurseIdString ? [nurseIdString] : [];
+  const dataPayload={
+    "nurseIds": nurseId,
+    "shiftCode": await AsyncStorage.getItem('shiftCode'),
+    "wardCode": await AsyncStorage.getItem('wardCode')
+  }
+  try{
+    const { authCookie, orgName } = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    const response = await itouchServer.post(
+      `${orgName}/alarmsummary/${hospitalCode}/raised/global`,
+      dataPayload,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('getAlarm API response: ', response.data);
+    return response.data;
+  }catch(error:any){
+    console.error('getAlarm API error: ', error?.response || error);
+    throw error;
+  }
+}
+
+export const getGlobalRaisedAlarm= async()=>{
+  const apiResponse = await getCurrentShiftNurses();
+  console.log('Current shift nurses:', apiResponse);
+  if (!apiResponse) {
+    throw new Error('No current shift nurses found');
+  } 
+  const nurseIds: string[] = apiResponse.map((nurse: any) => nurse.nurseId);
+
+  console.log('Nurse IDs for global alarm:', nurseIds);
+  const dataPayload={
+    "nurseIds": nurseIds,
+    "shiftCode": await AsyncStorage.getItem('shiftCode'),
+    "wardCode": await AsyncStorage.getItem('wardCode')
+  }
+  try{
+    const { authCookie, orgName } = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    const response = await itouchServer.post(
+      `${orgName}/alarmsummary/${hospitalCode}/raised/global`,
+      dataPayload,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('getGlobalAlarm API response: ', response.data);
+    return response.data;
+  }catch(error:any){
+    console.error('getGlobalAlarm API error: ', error?.response || error);
+    throw error;
+  }
+}
+
+export const getEmptyBeds= async()=>{
+  try{
+    const { authCookie, orgName, wardCode } = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    const response = await itouchServer.get(
+      `${orgName}/nurse/${hospitalCode}/getemptybeds/${wardCode}`,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('getEmptyBeds API response: ', response.data);
+    return response.data;
+  }catch(error:any){
+    //console.error('getEmptyBeds API error: ', error?.response || error);
+    throw error;
+  }
+}
+
 
   
  

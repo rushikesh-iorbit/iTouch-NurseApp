@@ -1,4 +1,3 @@
-// src/types/svg.d.ts
 import { SvgProps } from 'react-native-svg';
 
 export interface ColorableSvgProps extends SvgProps {

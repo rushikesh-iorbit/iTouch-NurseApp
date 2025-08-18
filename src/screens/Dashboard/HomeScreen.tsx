@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,16 +11,17 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import DynamicSvg from '../../components/DynamicSvg';
-import { getBedPatientInfo, getWardSVG, getCurrentShift, getAssignedBeds } from '../../services/nurseService';
+import { getBedPatientInfo, getWardSVG, getCurrentShift, getAssignedBeds, getEmptyBeds } from '../../services/nurseService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '../../components/Header';
-import { Notification } from '../../components/Notification';
+import { Notification } from '../Notifications/Notification';
 import { handleApiError } from '../../utils/errorHandler';
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import CalloutModal from '../../components/CallOutModal/CalloutModal';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
-import { GlobalNotifications } from '../../components/GlobalNotifications';
+import { GlobalNotifications } from '../Notifications/GlobalNotifications';
+import { Icons } from '../../../assets';
 
 
 const Menu = require('../../../assets/icons/menu-line.png');
@@ -39,10 +40,16 @@ const HomeScreen = () => {
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [svgXml, setSvgXml] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const notificationRef = useRef<any>(null);
 
   const [showCallout, setShowCallout] = useState(false); 
   const [bedPatientInfo, setBedPatientInfo] = useState<any>(null);
   const [assignedBedCodes, setAssignedBedCodes] = useState<string[]>([]);
+  const zoomRef = useRef<any>(null); // ref for ZoomableView
+  const [isZoomedIn, setIsZoomedIn] = useState(false); // toggle state
+  const dynamicSvgRef = useRef<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [emptyBeds, setEmptyBeds] = useState<string[]>([]);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -65,52 +72,188 @@ const HomeScreen = () => {
     }
   };
 
-  useEffect(() => {
-  const fetchSvg = async () => { 
+  // const handleZoomToggle = () => {
+  //   if (zoomRef.current) {
+  //     const newZoom = isZoomedIn ? 1 : 1.5; // adjust zoom scale as needed
+  //     zoomRef.current.zoomTo(newZoom);
+  //     setIsZoomedIn(!isZoomedIn);
+  //   }
+  // };
+
+ const handleZoomToggle = () => {
+  if (isZoomedIn) {
+    zoomRef.current?.zoomTo(1, { x: 0, y: 0 }, 300);
+    setIsZoomedIn(false);
+  } else {
+    zoomToAssignedBeds();
+  }
+};
+
+const zoomToAssignedBeds = () => {
+  if (!dynamicSvgRef.current || !zoomRef.current) return;
+
+  const positions = dynamicSvgRef.current.getElementPositions?.();
+  if (!positions) return;
+
+  const selectedBeds = assignedBedCodes.map(id => positions[id]).filter(Boolean);
+  if (selectedBeds.length === 0) return;
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  selectedBeds.forEach(({ x, y, width, height }) => {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + width);
+    maxY = Math.max(maxY, y + height+150);
+  });
+
+  const padding = 20;
+  const paddedMinX = minX - padding;
+  const paddedMinY = minY - padding;
+  const paddedMaxX = maxX + padding;
+  const paddedMaxY = maxY + padding;
+
+  const paddedWidth = paddedMaxX - paddedMinX;
+  const paddedHeight = paddedMaxY - paddedMinY;
+
+  const screenWidth = Dimensions.get('window').width;
+  const screenHeight = Dimensions.get('window').height - 50;
+
+  const maxZoom = 3;
+  const zoomScale = Math.min(
+    screenWidth / paddedWidth,
+    screenHeight / paddedHeight,
+    maxZoom
+  );
+
+  const contentCenterX = paddedMinX + paddedWidth / 2;
+  const contentCenterY = paddedMinY + paddedHeight / 2;
+
+  const screenCenterX = screenWidth / 2;
+  const screenCenterY = screenHeight / 2;
+
+  const offsetX = screenCenterX - contentCenterX * zoomScale;
+  const offsetY = screenCenterY - contentCenterY * zoomScale;
+
+  zoomRef.current.zoomTo(zoomScale, { x: offsetX, y: offsetY }, 300);
+  setIsZoomedIn(true);
+};
+
+
+
+//   useEffect(() => {
+//   const fetchSvg = async () => { 
+//     try {
+//       setLoading(true);
+
+//       // Fetch SVG first
+//       const response = await getWardSVG();
+//       await getCurrentShift(); // Always wait for this
+
+//       // Handle getAssignedBeds separately
+//       try {
+//         const response1 = await getAssignedBeds();
+//         console.log('getAssignedBeds API response:', response1);
+//         const codes = response1.map((bed: any) => bed.bedCode);
+//         setAssignedBedCodes(codes);
+//       } catch (bedError) {
+//         console.warn('getAssignedBeds failed:', bedError);
+//         Toast.show({
+//           type: 'info',
+//           text1: 'Warning',
+//           text2: 'Some bed assignments could not be loaded.',
+//         });
+//       }
+
+
+//       // Continue processing SVG even if getAssignedBeds failed
+//       if (response && response.svgFile) {
+//         setSvgXml(response.svgFile);
+//       } else {
+//         const errorMsg = response?.message || '';
+//         Toast.show({
+//           type: 'error',
+//           text1: 'Error',
+//           text2: errorMsg || 'SVG data not found.',
+//         });
+//       }
+
+//     } catch (error: any) {
+//       handleApiError(error, 'Failed to fetch SVG');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   fetchSvg();
+// }, []);
+
+const loadData = async () => {
+  try {
+    setLoading(true);
+
+    const response = await getWardSVG();
+    await getCurrentShift();
+
     try {
-      setLoading(true);
+      const response1 = await getAssignedBeds();
+      const codes = response1.map((bed: any) => bed.bedCode);
+      setAssignedBedCodes([...codes]);
+      // console.log('Assigned Bed Codes:', codes);  
 
-      // Fetch SVG first
-      const response = await getWardSVG();
-      await getCurrentShift(); // Always wait for this
-
-      // Handle getAssignedBeds separately
-      try {
-        const response1 = await getAssignedBeds();
-        console.log('getAssignedBeds API response:', response1);
-        const codes = response1.map((bed: any) => bed.bedCode);
-        setAssignedBedCodes(codes);
-      } catch (bedError) {
-        console.warn('getAssignedBeds failed:', bedError);
-        Toast.show({
-          type: 'info',
-          text1: 'Warning',
-          text2: 'Some bed assignments could not be loaded.',
-        });
-      }
-
-
-      // Continue processing SVG even if getAssignedBeds failed
-      if (response && response.svgFile) {
-        setSvgXml(response.svgFile);
-      } else {
-        const errorMsg = response?.message || '';
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: errorMsg || 'SVG data not found.',
-        });
-      }
-
-    } catch (error: any) {
-      handleApiError(error, 'Failed to fetch SVG');
-    } finally {
-      setLoading(false);
+    } catch (bedError) {
+      console.warn('getAssignedBeds failed:', bedError);
+      Toast.show({
+        type: 'info',
+        text1: 'Warning',
+        text2: 'Some bed assignments could not be loaded.',
+      });
     }
-  };
 
-  fetchSvg();
+    if (response && response.svgFile) {
+      setSvgXml(response.svgFile);
+      setRefreshKey(prev => prev + 1);
+    } else {
+      const errorMsg = response?.message || '';
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: errorMsg || 'SVG data not found.',
+      });
+    }
+
+  } catch (error: any) {
+    handleApiError(error, 'Failed to fetch SVG');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const fetchEmptyBeds = async () => {
+  try {
+    const response = await getEmptyBeds();
+    if (response && Array.isArray(response)) {
+      const codes = response.map((bed: any) => bed.bedCode);
+      setEmptyBeds(codes);
+    }
+  } catch (error: any) {
+    console.log('getEmptyBeds API error: ', error?.response || error);
+  }
+};
+useEffect(() => {
+  loadData();
+  fetchEmptyBeds();
 }, []);
+
+
+useEffect(() => {
+  if (svgXml && assignedBedCodes.length > 0) {
+    // Wait a tick for SVG to render
+    setTimeout(() => {
+      zoomToAssignedBeds();
+    }, 300);
+  }
+}, [svgXml, assignedBedCodes]);
+
 
   return (
     <View style={styles.container}>
@@ -120,34 +263,44 @@ const HomeScreen = () => {
       {/* Main Body */}
       <View style={styles.body}>
         <View>
-          <GlobalNotifications />
+          <GlobalNotifications onNotificationClick={() => {
+              notificationRef.current?.expandPanel();
+          }} />
         </View>
         <View style={styles.leftPanel}>
-          <Notification/>
+          <Notification ref={notificationRef}/>
         </View>
       
         <View style={styles.zoomIconWrapper}>
-          <TouchableOpacity >
+          <TouchableOpacity onPress={handleZoomToggle}>
             <Image source={zoomIcon} style={styles.zoomIconStyle} />
           </TouchableOpacity>
         </View>
+
         {/* Right Panel - SVG */}
         <View style={styles.rightPanel}>
           <ReactNativeZoomableView
+            ref={zoomRef}
             zoomEnabled={true}
             maxZoom={3}
             minZoom={0.5}
             initialZoom={1}
             bindToBorders={true}>
+            contentWidth={Dimensions.get('window').width}
+            contentHeight={Dimensions.get('window').height - 60}
           {loading ? (
             <ActivityIndicator size="large" color="#0000ff" />
           ) : svgXml ? (
             <DynamicSvg
+              key={refreshKey}
+              ref={dynamicSvgRef}
               svgXml={svgXml}
               width={Dimensions.get('window').width}
               height={Dimensions.get('window').height-50}
               initialColor={currentColor}
               onElementSelected={fetchBedPatientInfo}
+              highlightedIds={assignedBedCodes}
+              emptybedsIds={emptyBeds}
             />
           ) : (
             <Text>No Shift Found</Text>
@@ -157,7 +310,11 @@ const HomeScreen = () => {
       </View>
        <CalloutModal
         visible={showCallout}
-        onClose={() => setShowCallout(false)}
+        onClose={() => {
+          setShowCallout(false);
+          loadData();
+        }
+      }
         bedPatientInfo={bedPatientInfo}
       />
     </View>
@@ -175,7 +332,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: '#EFF5F1',
-    marginLeft: 10,
   },
   leftPanel:{
     width: 'auto',

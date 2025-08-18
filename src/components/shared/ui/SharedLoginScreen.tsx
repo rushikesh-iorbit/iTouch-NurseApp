@@ -144,7 +144,7 @@ const SharedLoginScreen: React.FC<LoginScreenProps> = ({
 
         <View style={styles.rightPanel}>
           <Image source={logoSource} style={styles.logo} />
-          <Text style={styles.welcomeText}>Welcome to ICU Ward B</Text>
+          <Text style={styles.welcomeText}>Welcome to iTouch Nurse</Text>
 
           <TextInput
             style={styles.input}
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   loginButton: {
-    backgroundColor: '#34a853',
+    backgroundColor: '#4CAE51',
     paddingVertical: 10,
     borderRadius: 10,
   },

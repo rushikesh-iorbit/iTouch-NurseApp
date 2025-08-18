@@ -8,6 +8,12 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+} from 'react-native-popup-menu';
 
 import { logoutAPI } from '../services/nurseService';
 import Toast from 'react-native-toast-message';
@@ -16,7 +22,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TextInput } from 'react-native';
 
-const Menu = require('../../assets/icons/Menu_Button.png');
+const MenuIconbutton = require('../../assets/icons/Menu_Button.png');
 const SearchIcon = require('../../assets/icons/search_icon.png');
 const FilterIcon = require('../../assets/icons/search_settings.png');
 
@@ -30,6 +36,7 @@ export const Header = () => {
   const [popupVisible, setPopupVisible] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuPosition, setMenuPosition] = useState({x: 0, y: 0});
 
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -96,11 +103,28 @@ const getFormattedDate = () => {
     <>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => setPopupVisible(true)}>
-            <Image source={Menu} style={styles.menuIcon} />
-          </TouchableOpacity>
-          <Text style={styles.title}>iTouch Nurse</Text>
-        </View>
+      <Menu>
+        <MenuTrigger>
+          <Image source={MenuIconbutton} style={styles.menuIcon} />
+        </MenuTrigger>
+
+        <MenuOptions
+          customStyles={{
+            optionsContainer: {
+              borderRadius: 8,
+              paddingVertical: 5,
+              width: 150,
+            },
+          }}
+        >
+          <MenuOption onSelect={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </MenuOption>
+        </MenuOptions>
+      </Menu>
+
+      <Text style={styles.title}>iTouch Nurse</Text>
+    </View>
 
         {/* <View style={styles.headerRight}>
           <Text style={styles.date}>{getFormattedDate()} </Text>
@@ -138,7 +162,7 @@ const getFormattedDate = () => {
     {/* Middle search bar */}
        
       {/* Popup Modal */}
-      <Modal
+      {/* <Modal
         transparent
         visible={popupVisible}
         animationType="none"
@@ -151,7 +175,7 @@ const getFormattedDate = () => {
             </TouchableOpacity>
           </View>
         </Pressable>
-      </Modal>
+      </Modal> */}
     </>
   );
 };
@@ -180,6 +204,8 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     marginRight: 10,
+    resizeMode: 'contain',
+
   },
   notificationIcon: {
     width: 28,
@@ -187,18 +213,18 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
   },
   date: {
-    fontSize: 16,
+    fontSize: 14,
     marginRight: 10,
     fontWeight: '500',
 
   },
   time: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#000',
     fontWeight: '500',
   },
@@ -222,8 +248,10 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#e74c3c',
-    fontWeight: '600',
+    fontWeight: 'bold',
     fontSize: 16,
+    textAlign: 'center',
+    
   },
   searchContainer: {
     flexDirection: 'row',

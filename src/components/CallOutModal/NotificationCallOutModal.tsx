@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, StyleSheet, Text, Pressable, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { Modal, View, StyleSheet, Text, Pressable, Image, TouchableOpacity, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
 const MonitoringVector = require('../../../assets/icons/monitoring.png');
 const InstructionsVector = require('../../../assets/icons/instruction.png');
 const WardTransferVector = require('../../../assets/icons/move_out.png');
 const DelegateVector = require('../../../assets/icons/delegate.png');
 const DoctorVector= require('../../../assets/icons/doctor.png');
-import {getCurrentShiftNurses} from '../../services/nurseService';
+import {getCurrentShiftNurses, delegatePatient} from '../../services/nurseService';
 import Toast from 'react-native-toast-message';
+import { Nurse } from '../Nurse';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const dropdownIcon = require('../../../assets/icons/dropdown.png');
+const nurse_userIcon = require('../../../assets/icons/nurse_user.png');
 
 type NotificationCallOutModalProps = {
   visible: boolean;
@@ -17,6 +22,7 @@ type NotificationCallOutModalProps = {
     lastName?: string;
     age?: number;
     gender?: string;
+    patientCode?: string;
     auditMe?: { createdtime?: string };
 
   }; 
@@ -27,13 +33,15 @@ type NotificationCallOutModalProps = {
 const NotificationCallOutModal: React.FC<NotificationCallOutModalProps> = ({ visible, onClose, bedPatientInfo }) => {
   const [selectedTab, setSelectedTab] = useState<'instructions' | 'moveout' | 'delegate'>('instructions');
   const [nurses, setNurses] = useState<any[]>([]);
+  const [selectedNurseId, setSelectedNurseId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const { width, height } = Dimensions.get('window');
   const modalWidth = width * 0.60;  // leaves 10% on each side - 0.7
   const modalHeight = height * 0.75; // 0.86
-
  let admissionDate = '-';
+ const currentPatient = bedPatientInfo?.patientCode;
  if (bedPatientInfo?.auditMe?.createdtime) {
   const dateObj = new Date(bedPatientInfo.auditMe.createdtime);
   admissionDate = dateObj.toLocaleDateString('en-GB', {
@@ -42,6 +50,60 @@ const NotificationCallOutModal: React.FC<NotificationCallOutModalProps> = ({ vis
     year: 'numeric',
   });
 }
+
+    const handleDelegateConfirm = async () => {
+    if (!selectedNurseId || !currentPatient) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please select a nurse and patient.',
+      });
+      return;
+    }
+
+    const currentNurseCode = await AsyncStorage.getItem('nurseCode');
+    const shiftCode= await AsyncStorage.getItem('shiftCode');
+    const wardCode = await AsyncStorage.getItem('wardCode');
+    const newNurseCode = nurses.find(n => n.id === selectedNurseId)?.code;
+
+    const payload = {
+      shiftCode: shiftCode,
+      wardCode: wardCode,
+      patientCode: currentPatient,
+      currentNurseCode,
+      newNurseCode,
+    };
+
+    try {
+      setIsLoading(true);
+      const result = await delegatePatient(payload);
+      onClose();
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Patient delegated successfully',
+      });
+      // optionally close modal or reset selection
+      setShowDropdown(false);
+      setSelectedNurseId(null);
+    } catch (error: any) {
+      onClose();
+      const apiErrorMessage =
+      (typeof error?.response?.data === 'string'
+        ? error.response.data
+        : error?.response?.data?.message || error?.message) ||
+      'Failed to delegate patient.';
+
+      Toast.show({
+        type: 'error',
+        text1: 'Delegate Failed',
+        text2: apiErrorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     
@@ -123,12 +185,62 @@ const NotificationCallOutModal: React.FC<NotificationCallOutModalProps> = ({ vis
                       <Image source={DelegateVector} style={styles.instructionIcon} />
                       <Text style={[styles.instructionsHeader, { color: '#4CAE51' }]}>Delegate</Text>
                     </View>
-                    <Text style={styles.bullet}>
-                      Select Nurse for Delegation
-                    </Text>
+                    <Text style={styles.bullet}>Select Nurse for Delegation:</Text>
+
+                    <View style={styles.dropdownWrapper}>
+                      <TouchableOpacity
+                        style={styles.dropdown}
+                        onPress={() => setShowDropdown(prev => !prev)}
+                      >
+                        <View style={styles.rowContainer}>
+                            <Image source={nurse_userIcon} style={styles.icon} />
+                            <Text style={{ color: selectedNurseId ? '#000' : '#888' }}>
+                              {selectedNurseId
+                                ? nurses.find(n => n.id === selectedNurseId)?.name
+                                : 'Select Name'}
+                            </Text>
+                            <Image source={dropdownIcon} style={styles.dropdownIcon} />
+                        </View>
+                      </TouchableOpacity>
+
+                      {showDropdown && (
+                        <View style={styles.dropdownOverlay}>
+                          <ScrollView nestedScrollEnabled style={styles.dropdownList}>
+                            {nurses.map(nurse => (
+                              <TouchableOpacity
+                                key={nurse.id}
+                                onPress={() => {
+                                  setSelectedNurseId(nurse.id);
+                                  setShowDropdown(false);
+                                }}
+                                style={styles.dropdownItem}
+                              >
+                                <View style={styles.rowContainer}>
+                                  <Image source={nurse_userIcon} style={styles.icon} />
+                                  <Text style={styles.nurseName}>{nurse.name}</Text>
+                                  <Image source={dropdownIcon} style={styles.dropdownIcon} />
+                                </View>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
+
                   </View>
-                  <TouchableOpacity style={styles.confirmButton}>
-                    <Text style={{ color: '#000', fontWeight: '600' }}>Delegate</Text>
+
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={() => {
+                      if (!selectedNurseId) {
+                        Toast.show({ type: 'error', text1: 'Please select a nurse' });
+                        return;
+                      }
+                      // Call your API here to delegate
+                      console.log('Delegating to', selectedNurseId);
+                    }}
+                  >
+                    <Text style={{ color: '#000', fontWeight: '600' }} onPress={handleDelegateConfirm}>Delegate</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -154,7 +266,26 @@ const NotificationCallOutModal: React.FC<NotificationCallOutModalProps> = ({ vis
                 try {
                   setIsLoading(true);
                   const response = await getCurrentShiftNurses();
-                  setNurses(response.data || []);
+                    interface NurseApiResponse {
+                    nurseId: string;
+                    firstName: string;
+                    lastName: string;
+                    nurseCode: string;
+                    }
+
+                    interface MappedNurse {
+                    id: string;
+                    name: string;
+                    code: string;
+                    }
+
+                    const mappedNurses: MappedNurse[] = (response as NurseApiResponse[] || []).map((nurse: NurseApiResponse): MappedNurse => ({
+                    id: nurse.nurseId,
+                    name: `${nurse.firstName} ${nurse.lastName}`,
+                    code: nurse.nurseCode,
+                    }));
+                  setNurses(mappedNurses);
+                  console.log('Nurses :', nurses);
                 } catch (error) {
                   console.error('Error fetching nurses:', error);
                   Toast.show({
@@ -428,4 +559,69 @@ verticalLine: {
     borderStyle: 'dashed',
     marginHorizontal: 10,
   },
+  dropdownWrapper: {
+  marginTop: 8,
+  position: 'relative',
+},
+
+dropdown: {
+  padding: 10,
+  backgroundColor: '#fff',
+  borderRadius: 4,
+  borderColor: '#ccc',
+  borderWidth: 1,
+},
+
+dropdownOverlay: {
+  position: 'absolute',
+  top: 45, // just below the button
+  left: 0,
+  right: 0,
+  backgroundColor: '#fff',
+  borderRadius: 4,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  zIndex: 1000,
+  elevation: 10,
+  maxHeight: 160, // Enough for ~4 items
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 3,
+},
+
+dropdownList: {
+  maxHeight: 160,
+},
+
+dropdownItem: {
+  padding: 10,
+  borderBottomWidth: 1,
+  borderBottomColor: '#eee',
+},
+rowContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between', // key to separating start, middle, end
+  paddingHorizontal: 2,
+},
+
+dropdownIcon: {
+  width: 14,
+  height: 14,
+  resizeMode: 'contain',
+  tintColor: '#000',
+  marginLeft: 8,
+},
+
+nurseName: {
+  flex: 1, // take up remaining space between icons
+  fontSize: 14,
+  color: '#000',
+  textAlign: 'left',
+  marginHorizontal: 4,
+},
+
+
+
 });
