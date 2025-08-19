@@ -114,7 +114,7 @@
     console.log('logoutAPI response: ', response);
     return response.data;
   } catch (error: any) {
-    console.error('logout API error: ', error.response.data?.message || error);
+    //console.error('logout API error: ', error.response.data?.message || error);
     throw error;
   }
 };
@@ -129,9 +129,9 @@ export const getAndCreateFcmTokenAPI = async (data: any) => {
     if (!userName) {
       throw new Error('User name not found in AsyncStorage');
     }
-    console.log('userName:', userName);
-    console.log('hospitalCode:', hospitalCode);
-    console.log('data:', data);
+    // console.log('userName:', userName);
+    // console.log('hospitalCode:', hospitalCode);
+    // console.log('data:', data);
     const response = await itouchServer.post(
       `${orgName}/nurse/${hospitalCode}/${userName}/createfcmtoken`,
       data,
@@ -141,12 +141,12 @@ export const getAndCreateFcmTokenAPI = async (data: any) => {
         },
       },
     );
-    console.log('The fcmtoken data ', data);
-    console.log('The fcmtokenAPI response is ', response);
-    console.log('update fcmtoken API response: ', response.data);
+    // console.log('The fcmtoken data ', data);
+    // console.log('The fcmtokenAPI response is ', response);
+    // console.log('update fcmtoken API response: ', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('update fcmtoken API error: ', error?.response || error);
+    //console.error('update fcmtoken API error: ', error?.response || error);
     throw error;
   }
 };
@@ -173,10 +173,10 @@ export const createNurseNoteAPI = async (noteText: any) => {
          },
        }
      );
-     console.log(response.data);
+     //console.log(response.data);
      return response.data;
    } catch (error: any) {
-     console.error('createDoctorNoteAPI error:', error?.response || error);
+     //console.error('createDoctorNoteAPI error:', error?.response || error);
      throw error;
    }
  };
@@ -225,7 +225,7 @@ export const createNurseNoteAPI = async (noteText: any) => {
         },
       },
     );
-    console.log('get NurseDetail API response: ', response.data);
+    //console.log('get NurseDetail API response: ', response.data);
     AsyncStorage.setItem('wardCode', response.data.wardCode);
     return response.data;
   } catch (error: any) {
@@ -252,7 +252,7 @@ export const getBedPatientInfo = async (bedCode: string) => {
         },
       },
     );
-    console.log('get BedPatientInfo API response: ', response.data);
+    //console.log('get BedPatientInfo API response: ', response.data);
     return response.data;
   } catch (error: any) {
    // console.error('getBedPatientInfo API error: ', error?.response || error);
@@ -276,11 +276,11 @@ export const getCurrentShift = async () =>{
         },
       },
     );
-    console.log('getCurrentShift API response: ', response.data);
+    //console.log('getCurrentShift API response: ', response.data);
     AsyncStorage.setItem('shiftCode', response.data.shiftCode);
     return response.data;
   }catch(error:any){
-    console.error('getCurrentShift API error: ', error?.response || error);
+    //console.error('getCurrentShift API error: ', error?.response || error);
     throw error;
   }
 }
@@ -304,10 +304,10 @@ export const getAssignedBeds = async () => {
         },
       },
     );
-    console.log('getAssignedBeds API response: ', response.data);
+    //console.log('getAssignedBeds API response: ', response.data);
     return response.data;
   }catch(error:any){
-    console.error('getAssignedBeds API error: ', error?.response || error);
+    //console.error('getAssignedBeds API error: ', error?.response || error);
     throw error;
   }
 }
@@ -324,10 +324,10 @@ export const getCurrentShiftNurses = async () => {
         },
       },
     );
-    console.log('getCurrentShiftNurses API response: ', response.data);
+    //console.log('getCurrentShiftNurses API response: ', response.data);
     return response.data;
   }catch(error:any){
-    console.error('getCurrentShiftNurses API error: ', error?.response || error);
+    //console.error('getCurrentShiftNurses API error: ', error?.response || error);
     throw error;
   }
 }
@@ -343,7 +343,7 @@ export const delegatePatient = async (data:any) =>{
   try{
     const { authCookie, orgName, wardCode, shiftCode} = await getCommonData();
     const hospitalCode = await AsyncStorage.getItem('hospitalCode');
-    console.log('delegatePatient API data: ', dataPayload);
+    //console.log('delegatePatient API data: ', dataPayload);
     const response = await itouchServer.post(
       `${orgName}/nurse/${hospitalCode}/delegatePatient`,
       dataPayload,
@@ -353,10 +353,10 @@ export const delegatePatient = async (data:any) =>{
         },
       },
     );
-    console.log('delegatePatient API response: ', response.data);
+    //console.log('delegatePatient API response: ', response.data);
     return response.data;
   }catch(error:any){
-    console.error('delegatePatient API error: ', error?.response || error);
+    //console.error('delegatePatient API error: ', error?.response || error);
     throw error;
   }
 }
@@ -381,23 +381,23 @@ export const getRaisedAlarm= async()=>{
         },
       },
     );
-    console.log('getAlarm API response: ', response.data);
+    //console.log('getAlarm API response: ', response.data);
     return response.data;
   }catch(error:any){
-    console.error('getAlarm API error: ', error?.response || error);
+    //console.error('getAlarm API error: ', error?.response || error);
     throw error;
   }
 }
 
 export const getGlobalRaisedAlarm= async()=>{
   const apiResponse = await getCurrentShiftNurses();
-  console.log('Current shift nurses:', apiResponse);
+  //console.log('Current shift nurses:', apiResponse);
   if (!apiResponse) {
     throw new Error('No current shift nurses found');
   } 
   const nurseIds: string[] = apiResponse.map((nurse: any) => nurse.nurseId);
 
-  console.log('Nurse IDs for global alarm:', nurseIds);
+  //console.log('Nurse IDs for global alarm:', nurseIds);
   const dataPayload={
     "nurseIds": nurseIds,
     "shiftCode": await AsyncStorage.getItem('shiftCode'),
@@ -415,10 +415,10 @@ export const getGlobalRaisedAlarm= async()=>{
         },
       },
     );
-    console.log('getGlobalAlarm API response: ', response.data);
+    //console.log('getGlobalAlarm API response: ', response.data);
     return response.data;
   }catch(error:any){
-    console.error('getGlobalAlarm API error: ', error?.response || error);
+    //console.error('getGlobalAlarm API error: ', error?.response || error);
     throw error;
   }
 }
@@ -435,7 +435,7 @@ export const getEmptyBeds= async()=>{
         },
       },
     );
-    console.log('getEmptyBeds API response: ', response.data);
+    //console.log('getEmptyBeds API response: ', response.data);
     return response.data;
   }catch(error:any){
     //console.error('getEmptyBeds API error: ', error?.response || error);

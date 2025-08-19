@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Path, Text as SvgText, Circle, Rect, G, Line } from 'react-native-svg';
+import Svg, { Path, Text as SvgText, Circle, Rect, G, Line , Ellipse} from 'react-native-svg';
 import { DOMParser } from 'xmldom';
+import { Icons } from '../../assets';
 
 type SvgElement = React.ReactElement<any>;
 
@@ -17,7 +18,45 @@ interface DynamicSvgProps {
   onElementSelected?: (id: string) => void;
   highlightedIds?: string[];
   emptybedsIds?: string[];
+  alerts?: any[];
+  admitPatientBed?: any[];
 }
+
+const getColorByPriority = (priority: number) => {
+  switch (priority) {
+    case 0:
+      return '#ff0000'; // critical
+    case 1:
+      return '#ffaa00'; // high
+    case 2:
+      return '#00aaff'; // medium
+    default:
+      return '#cccccc'; // low
+  }
+};
+
+const getParameterKey = (violatedParameter?: string): string => {
+  if (!violatedParameter) return '';
+  const [key] = violatedParameter.split(':');
+  return key.trim().toUpperCase();
+};
+
+const getParameterIcon = (
+  key: string,
+): React.FC<{ width?: number; height?: number; fill?: string }> => {
+  switch (key) {
+    case 'HR':
+      return Icons.hr;
+    case 'SPO2':
+      return Icons.spo2;
+    case 'RR':
+      return Icons.rr;
+    default:
+      return Icons.default;
+  }
+};
+
+
 
 const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
   svgXml,
@@ -26,7 +65,9 @@ const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
   initialColor = '#4CAE51',
   onElementSelected,
   highlightedIds = [],
-  emptybedsIds = []
+  emptybedsIds = [],
+  alerts = [],
+  admitPatientBed = []
 }, ref) => {
   const [svgElements, setSvgElements] = useState<SvgElement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +75,14 @@ const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
   const [colorMap, setColorMap] = useState<Record<string, string>>({});
   const [bedPositions, setBedPositions] = useState<Record<string, { centerX: number; centerY: number }>>({});
   const elementPositionMap = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
+  const [blinkOn, setBlinkOn] = useState(true);
+
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setBlinkOn(prev => !prev);
+  //   }, 600); // toggle every 600ms
+  //   return () => clearInterval(interval);
+  // }, []);
 
   useImperativeHandle(ref, () => ({
     getElementPositions: () => elementPositionMap.current
@@ -76,7 +125,7 @@ const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
                 firstRect = { x: rectX, y: rectY, width: rectW, height: rectH };
                 elementPositionMap.current[id] = firstRect;
                 newBedPositions[id] = {
-                  centerX: rectX + rectW / 2 -15,
+                  centerX: rectX + rectW / 2 - 15,
                   centerY: rectY + rectH / 2
                 };
                 break; // only first rect
@@ -95,13 +144,24 @@ const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
             const isHighlighted = highlightedIds.includes(id);
             const shouldHighlight = isSelected || isHighlighted;
             const isEmptyBed = emptybedsIds.includes(id);
+            const isAdmit = admitPatientBed.includes(id);
 
             const tagAffectsVisual = ['rect', 'circle', 'path', 'line'];
             if (tagAffectsVisual.includes(tagName)) {
-              props.fill = shouldHighlight ? '#ffffff' : colorMap[id] || props.fill;
-              props.stroke = shouldHighlight ? '#4CAE51' : props.stroke || '#000';
-              props.strokeWidth = shouldHighlight ? 3 : props.strokeWidth || 1;
-            }
+                if (isAdmit) {
+                  props.stroke = '#ff1100ff';
+                  props.strokeWidth = 3;
+                  props.fill = blinkOn ? '#ffffff' : '#ff1100ff'; // blink between white and red
+                  props.opacity = blinkOn ? 1 : 0.5;  
+                } else if (isSelected || isHighlighted) {
+                  props.stroke = '#4CAE51';
+                  props.strokeWidth = 3;
+                  props.fill = '#ffffff';
+                } else {
+                  props.stroke = props.stroke || '#000';
+                  props.strokeWidth = 1;
+                }
+              }
           }
 
           const children: any[] = [];
@@ -142,7 +202,7 @@ const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
     };
 
     parseSvg();
-  }, [svgXml, initialColor, selectedId, colorMap, highlightedIds, emptybedsIds]);
+  }, [svgXml, initialColor, selectedId, colorMap, highlightedIds, emptybedsIds, blinkOn]);
 
   const renderTransformIcons = () => {
     return emptybedsIds.map(id => {
@@ -164,6 +224,29 @@ const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
     });
   };
 
+  const renderAlerts = () => {
+  return alerts.map((alert, idx) => {
+    const bedId = alert.bedCode;
+    const position = bedPositions[bedId];
+    if (!position) return null;
+
+    const paramKey = getParameterKey(alert.violatedParameter);
+    const IconComponent = getParameterIcon(paramKey);
+    const priorityColor = getColorByPriority(alert.priority);
+
+    return (
+      <G
+        key={`alert-${bedId}-${idx}`}
+        transform={`translate(${position.centerX},${position.centerY}) scale(1.2)`}
+      >
+        <IconComponent width={24} height={24} fill={priorityColor} />
+      </G>
+    );
+  });
+};
+ 
+
+
   if (loading) {
     return <View style={styles.container}><ActivityIndicator size="large" /></View>;
   }
@@ -173,6 +256,7 @@ const DynamicSvg = forwardRef<DynamicSvgRef, DynamicSvgProps>(({
       <Svg viewBox="0 0 1000 600" width={width} height={height}>
         {svgElements}
         {renderTransformIcons()}
+        {renderAlerts()}
       </Svg>
     </View>
   );

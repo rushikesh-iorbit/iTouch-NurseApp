@@ -45,14 +45,15 @@ const getParameterIcon = (
 };
 
 type GlobalNotificationsProps = {
+  alerts: any[];
   onNotificationClick?: () => void;
 };
 
-export const GlobalNotifications: React.FC<GlobalNotificationsProps> = ({ onNotificationClick }) => {
+export const GlobalNotifications: React.FC<GlobalNotificationsProps> = ({ alerts, onNotificationClick }) => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [scrollHeight, setScrollHeight] = useState(1);
   const [contentHeight, setContentHeight] = useState(1);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  // const [alerts, setAlerts] = useState<any[]>([]);
 
   const indicatorSize = (scrollHeight / contentHeight) * scrollHeight;
   const scrollableContentHeight = contentHeight - scrollHeight;
@@ -64,28 +65,28 @@ export const GlobalNotifications: React.FC<GlobalNotificationsProps> = ({ onNoti
     extrapolate: 'clamp',
   });
 
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+  // useEffect(() => {
+  //   let intervalId: NodeJS.Timeout;
 
-    const fetchAlarms = async () => {
-      try {
-        const data = await getGlobalRaisedAlarm();
-        if (Array.isArray(data)) {
-          setAlerts(data);
-        } else {
-          setAlerts([]);
-        }
-      } catch (err) {
-        console.error('Error fetching global alarms:', err);
-        setAlerts([]);
-      }
-    };
+  //   const fetchAlarms = async () => {
+  //     try {
+  //       const data = await getGlobalRaisedAlarm();
+  //       if (Array.isArray(data)) {
+  //         setAlerts(data);
+  //       } else {
+  //         setAlerts([]);
+  //       }
+  //     } catch (err) {
+  //       console.error('Error fetching global alarms:', err);
+  //       setAlerts([]);
+  //     }
+  //   };
 
-    fetchAlarms();
-    intervalId = setInterval(fetchAlarms, 5000); // every 5 seconds
+  //   fetchAlarms();
+  //   intervalId = setInterval(fetchAlarms, 5000); // every 5 seconds
 
-    return () => clearInterval(intervalId);
-  }, []);
+  //   return () => clearInterval(intervalId);
+  // }, []);
 
   return (
     <View style={styles.container}>

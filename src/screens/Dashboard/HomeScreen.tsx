@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import DynamicSvg from '../../components/DynamicSvg';
-import { getBedPatientInfo, getWardSVG, getCurrentShift, getAssignedBeds, getEmptyBeds } from '../../services/nurseService';
+import { getBedPatientInfo, getWardSVG, getCurrentShift, getAssignedBeds, getEmptyBeds , getGlobalRaisedAlarm} from '../../services/nurseService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '../../components/Header';
@@ -21,7 +21,6 @@ import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-vi
 import CalloutModal from '../../components/CallOutModal/CalloutModal';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 import { GlobalNotifications } from '../Notifications/GlobalNotifications';
-import { Icons } from '../../../assets';
 
 
 const Menu = require('../../../assets/icons/menu-line.png');
@@ -50,6 +49,8 @@ const HomeScreen = () => {
   const dynamicSvgRef = useRef<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [emptyBeds, setEmptyBeds] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [admitPatientBed, setAdmitPatientBed] = useState<string | null>("APOLLOORG1H1B3");
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -254,6 +255,29 @@ useEffect(() => {
   }
 }, [svgXml, assignedBedCodes]);
 
+useEffect(() => {
+  let intervalId: NodeJS.Timeout;
+
+  const fetchAlarms = async () => {
+    try {
+      const data = await getGlobalRaisedAlarm();
+      if (Array.isArray(data)) {
+        setAlerts(data);
+      } else {
+        setAlerts([]);
+      }
+    } catch (err) {
+      console.error('Error fetching global alarms:', err);
+      setAlerts([]);
+    }
+  };
+
+  fetchAlarms();
+  intervalId = setInterval(fetchAlarms, 5000);
+
+  return () => clearInterval(intervalId);
+}, []);
+
 
   return (
     <View style={styles.container}>
@@ -263,18 +287,23 @@ useEffect(() => {
       {/* Main Body */}
       <View style={styles.body}>
         <View>
-          <GlobalNotifications onNotificationClick={() => {
+          <GlobalNotifications
+            alerts={alerts}
+            onNotificationClick={() => {
               notificationRef.current?.expandPanel();
-          }} />
+            }}
+          />
         </View>
         <View style={styles.leftPanel}>
           <Notification ref={notificationRef}/>
         </View>
       
-        <View style={styles.zoomIconWrapper}>
-          <TouchableOpacity onPress={handleZoomToggle}>
-            <Image source={zoomIcon} style={styles.zoomIconStyle} />
-          </TouchableOpacity>
+        <View style={styles.zoomContainer}>
+          <View style={styles.zoomIconWrapper}>
+            <TouchableOpacity onPress={handleZoomToggle}>
+              <Image source={zoomIcon} style={styles.zoomIconStyle} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Right Panel - SVG */}
@@ -301,6 +330,8 @@ useEffect(() => {
               onElementSelected={fetchBedPatientInfo}
               highlightedIds={assignedBedCodes}
               emptybedsIds={emptyBeds}
+              alerts={alerts}
+              admitPatientBed={admitPatientBed ? [admitPatientBed] : []}
             />
           ) : (
             <Text>No Shift Found</Text>
@@ -344,9 +375,18 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
 
   },
-  zoomIconWrapper: {
-    zIndex: 30,
-  },
+  zoomContainer: {
+  flexDirection: 'column',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  marginHorizontal: 3,
+},
+
+zoomIconWrapper: {
+  padding: 5,
+  zIndex:30
+},
+
 
 zoomIconStyle: {
   width: 40,
@@ -354,7 +394,7 @@ zoomIconStyle: {
   resizeMode: 'contain',
   borderRadius: 5,
   padding: 5,
-  elevation: 4,
+  elevation: 8,
 },
 
 });
