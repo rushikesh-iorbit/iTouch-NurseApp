@@ -19,6 +19,7 @@ import { Notification } from '../Notifications/Notification';
 import { handleApiError } from '../../utils/errorHandler';
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import CalloutModal from '../../components/CallOutModal/CalloutModal';
+import AdmitPatientModal from '../../components/CallOutModal/AdmitPatientModal';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 import { GlobalNotifications } from '../Notifications/GlobalNotifications';
 
@@ -42,6 +43,8 @@ const HomeScreen = () => {
   const notificationRef = useRef<any>(null);
 
   const [showCallout, setShowCallout] = useState(false); 
+  const [modalVisible, setModalVisible] = useState(true);
+  const [activeModal, setActiveModal] = useState<"assignDevices" | "callout" | null>(null);
   const [bedPatientInfo, setBedPatientInfo] = useState<any>(null);
   const [assignedBedCodes, setAssignedBedCodes] = useState<string[]>([]);
   const zoomRef = useRef<any>(null); // ref for ZoomableView
@@ -61,7 +64,12 @@ const HomeScreen = () => {
         setSelectedElement(bedPatientResponse.bedCode);
         //navigation.navigate('BedPatientInfo', bedPatientResponse);
         setBedPatientInfo(bedPatientResponse); 
-        setShowCallout(true); 
+        //setShowCallout(true); 
+        if (bedPatientResponse.bedCode === admitPatientBed) {
+        setActiveModal("assignDevices");
+      } else {
+        setActiveModal("callout");
+      }
       }
     } catch (error: any) {
       //console.error('getBedPatientInfo API error: ', error?.response || error);
@@ -138,55 +146,6 @@ const zoomToAssignedBeds = () => {
   zoomRef.current.zoomTo(zoomScale, { x: offsetX, y: offsetY }, 300);
   setIsZoomedIn(true);
 };
-
-
-
-//   useEffect(() => {
-//   const fetchSvg = async () => { 
-//     try {
-//       setLoading(true);
-
-//       // Fetch SVG first
-//       const response = await getWardSVG();
-//       await getCurrentShift(); // Always wait for this
-
-//       // Handle getAssignedBeds separately
-//       try {
-//         const response1 = await getAssignedBeds();
-//         console.log('getAssignedBeds API response:', response1);
-//         const codes = response1.map((bed: any) => bed.bedCode);
-//         setAssignedBedCodes(codes);
-//       } catch (bedError) {
-//         console.warn('getAssignedBeds failed:', bedError);
-//         Toast.show({
-//           type: 'info',
-//           text1: 'Warning',
-//           text2: 'Some bed assignments could not be loaded.',
-//         });
-//       }
-
-
-//       // Continue processing SVG even if getAssignedBeds failed
-//       if (response && response.svgFile) {
-//         setSvgXml(response.svgFile);
-//       } else {
-//         const errorMsg = response?.message || '';
-//         Toast.show({
-//           type: 'error',
-//           text1: 'Error',
-//           text2: errorMsg || 'SVG data not found.',
-//         });
-//       }
-
-//     } catch (error: any) {
-//       handleApiError(error, 'Failed to fetch SVG');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   fetchSvg();
-// }, []);
 
 const loadData = async () => {
   try {
@@ -339,15 +298,25 @@ useEffect(() => {
           </ReactNativeZoomableView>
         </View>
       </View>
-       <CalloutModal
-        visible={showCallout}
-        onClose={() => {
-          setShowCallout(false);
-          loadData();
-        }
-      }
-        bedPatientInfo={bedPatientInfo}
-      />
+       {activeModal === "callout" && (
+          <CalloutModal
+            visible={true}
+            onClose={() => {
+              setActiveModal(null);
+              loadData();
+            }}
+            bedPatientInfo={bedPatientInfo}
+          />
+        )}
+
+        {activeModal === "assignDevices" && (
+          <AdmitPatientModal
+            visible={true}
+            onClose={() => setActiveModal(null)}
+            patientInfo={bedPatientInfo}
+          />
+        )}
+
     </View>
   );
 };
