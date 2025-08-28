@@ -114,7 +114,7 @@ const getParameterIcon = (
           setRaisedAlarms([]);
         }
       } catch (error) {
-        console.error('Error fetching raised alarms:', error);
+        // console.error('Error fetching raised alarms:', error);
         setRaisedAlarms([]);
       }
     };

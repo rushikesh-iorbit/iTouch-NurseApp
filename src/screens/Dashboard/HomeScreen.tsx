@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import DynamicSvg from '../../components/DynamicSvg';
-import { getBedPatientInfo, getWardSVG, getCurrentShift, getAssignedBeds, getEmptyBeds , getGlobalRaisedAlarm} from '../../services/nurseService';
+import { getBedPatientInfo, getWardSVG, getCurrentShift, getAssignedBeds, getEmptyBeds , getGlobalRaisedAlarm, assignedDevices} from '../../services/nurseService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '../../components/Header';
@@ -22,7 +22,8 @@ import CalloutModal from '../../components/CallOutModal/CalloutModal';
 import AdmitPatientModal from '../../components/CallOutModal/AdmitPatientModal';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 import { GlobalNotifications } from '../Notifications/GlobalNotifications';
-
+import { LogBox } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Menu = require('../../../assets/icons/menu-line.png');
 const NotificationIcon = require('../../../assets/icons/notification-2-line.png');
@@ -34,6 +35,9 @@ const emergencyIcon = require('../../../assets/icons/emergency_call_icon.png');
 type RootStackParamList = {
   BedPatientInfo: { bedCode: string };
 };
+LogBox.ignoreLogs(['Encountered two children with the same key']);
+LogBox.ignoreLogs(['Each child in a list should have a unique "key" prop.']);
+LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component.']);
 
 const HomeScreen = () => {
   const [currentColor, setCurrentColor] = useState('#ffffff');
@@ -53,7 +57,8 @@ const HomeScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [emptyBeds, setEmptyBeds] = useState<string[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
-  const [admitPatientBed, setAdmitPatientBed] = useState<string | null>("APOLLOORG1H1B3");
+  const [admitPatientBed, setAdmitPatientBed] = useState<string | null>(null);
+  const [assignedDevicesList, setAssignedDevicesList] = useState<any[]>([]);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -199,9 +204,20 @@ const fetchEmptyBeds = async () => {
     console.log('getEmptyBeds API error: ', error?.response || error);
   }
 };
+
+const fetchAssignedDevices = async (bedCode: string) => {
+  try {
+    const response = await assignedDevices(bedCode);
+    if (response) {
+      setAssignedDevicesList(response);
+    }
+    console.log('Assigned Devices:', response);
+  } catch (error: any) {
+    console.log('assignedDevices API error: ', error?.response || error);
+  }
+}
 useEffect(() => {
   loadData();
-  fetchEmptyBeds();
 }, []);
 
 
@@ -226,22 +242,27 @@ useEffect(() => {
         setAlerts([]);
       }
     } catch (err) {
-      console.error('Error fetching global alarms:', err);
+      //console.error('Error fetching global alarms:', err);
       setAlerts([]);
     }
   };
 
   fetchAlarms();
-  intervalId = setInterval(fetchAlarms, 5000);
+  fetchEmptyBeds();
+  intervalId = setInterval(() => {
+    fetchAlarms();
+    fetchEmptyBeds();
+  }, 5000);
 
   return () => clearInterval(intervalId);
 }, []);
-
+const insets = useSafeAreaInsets()
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Header/>
+      /<Header/>
+      
 
       {/* Main Body */}
       <View style={styles.body}>
@@ -284,9 +305,12 @@ useEffect(() => {
               ref={dynamicSvgRef}
               svgXml={svgXml}
               width={Dimensions.get('window').width}
-              height={Dimensions.get('window').height-50}
+              height={Dimensions.get('window').height-80}
               initialColor={currentColor}
-              onElementSelected={fetchBedPatientInfo}
+              onElementSelected={(bedCode: string) => {
+                fetchBedPatientInfo(bedCode);
+                fetchAssignedDevices(bedCode);
+              }}
               highlightedIds={assignedBedCodes}
               emptybedsIds={emptyBeds}
               alerts={alerts}
@@ -314,6 +338,7 @@ useEffect(() => {
             visible={true}
             onClose={() => setActiveModal(null)}
             patientInfo={bedPatientInfo}
+            assignedDevices={assignedDevicesList}
           />
         )}
 

@@ -2,7 +2,7 @@
   import axios from 'axios';
   import Toast from 'react-native-toast-message';
 
-  const BASE_URL = 'http://192.168.1.115:8055/api';
+  const BASE_URL = 'http://192.168.1.128:8055/api';
 
   export const itouchServer = axios.create({
     baseURL: BASE_URL,
@@ -439,6 +439,25 @@ export const getEmptyBeds= async()=>{
     return response.data;
   }catch(error:any){
     //console.error('getEmptyBeds API error: ', error?.response || error);
+    throw error;
+  }
+}
+
+export const assignedDevices= async(bedCode:String)=>{
+  try{
+    const { authCookie, orgName } = await getCommonData();
+    const hospitalCode = await AsyncStorage.getItem('hospitalCode');
+    const response = await itouchServer.get(
+      `${orgName}/bed/${hospitalCode}/${bedCode}/devicesassigned`,
+      {
+        headers: {
+          Cookie: `X-Auth=${authCookie}`,
+        },
+      },
+    );
+    console.log('assignedDevices API response: ', response.data);
+    return response.data;
+  }catch(error:any){
     throw error;
   }
 }

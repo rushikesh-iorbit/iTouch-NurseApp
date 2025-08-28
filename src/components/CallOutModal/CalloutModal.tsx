@@ -39,7 +39,7 @@ if (bedPatientInfo?.auditMe?.createdtime) {
 }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
          <View style={[styles.card, { width: modalWidth, height: modalHeight }]}>

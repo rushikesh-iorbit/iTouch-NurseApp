@@ -8,10 +8,15 @@ import { MenuProvider } from 'react-native-popup-menu';
 import { SafeAreaView } from 'react-native-safe-area-context';
 export default function Dashboard() {
     return (
-       <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-        <MenuProvider>
+    //    <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
+    //     <MenuProvider>
+    //      <HomeScreen/>
+    //     </MenuProvider>
+    //    </SafeAreaView>
+    <View style={{ flex: 1, backgroundColor: '#000' , padding:15}}>
+         <MenuProvider>
          <HomeScreen/>
         </MenuProvider>
-       </SafeAreaView>
+    </View>
     );
 }

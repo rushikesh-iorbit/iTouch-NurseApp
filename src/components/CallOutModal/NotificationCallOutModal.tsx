@@ -107,7 +107,7 @@ const NotificationCallOutModal: React.FC<NotificationCallOutModalProps> = ({ vis
 
   return (
     
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
          <View style={[styles.card, { width: modalWidth, height: modalHeight }]}>
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     elevation: 20,
     position: 'absolute',
     right: '4%',
-    bottom:'5%',
+    bottom:'6%',
   },
   loadingContainer: {
   flex: 1,

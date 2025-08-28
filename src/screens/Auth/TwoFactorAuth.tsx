@@ -14,7 +14,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { verify2faAPI, getAndCreateFcmTokenAPI } from '../../services/nurseService';
 import Toast from 'react-native-toast-message';
-import  messaging from '@react-native-firebase/messaging';
+import  messaging, { getMessaging } from '@react-native-firebase/messaging';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 type RootStackParamList = {
@@ -50,7 +50,7 @@ const TwoFactorAuth = () => {
         await AsyncStorage.setItem('firstName', response.firstName);
         await AsyncStorage.setItem('lastName', response.lastName);
         
-        const fcmToken= await messaging().getToken();
+        const fcmToken= await getMessaging().getToken();
         const deviceOsInfo = Platform.OS;
         const userName = await AsyncStorage.getItem('userName');
 
